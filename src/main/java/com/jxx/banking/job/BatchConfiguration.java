@@ -71,16 +71,16 @@ public class BatchConfiguration {
                 .build();
     }
 
+    // 값을 데이터베이스에 저장하는 역할
     @Bean
     public JdbcBatchItemWriter<Transaction> transactionWriter(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Transaction>()
-                .itemSqlParameterSourceProvider(
-                        new BeanPropertyItemSqlParameterSourceProvider<>()
-                ).sql("INSERT INTO TRANSACTION " +
+                .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Transaction>())
+                .sql("INSERT INTO TRANSACTION " +
                         "(ACCOUNT_SUMMARY_ID, ACCOUNT_NUMBER, TIMESTAMP, AMOUNT) " +
                         "VALUES ((SELECT ID FROM ACCOUNT_SUMMARY " +
                         "   WHERE ACCOUNT_NUMBER = :accountNumber)," +
-                        ":timestamp, :amount)")
+                        ":accountNumber, :timestamp, :amount)")
                 .dataSource(dataSource)
                 .build();
     }
@@ -130,11 +130,11 @@ public class BatchConfiguration {
     @Bean
     public JdbcBatchItemWriter<AccountSummary> accountSummaryWriter(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<AccountSummary>()
-                .dataSource(dataSource)
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
                 .sql("UPDATE ACCOUNT_SUMMARY " +
-                        "SET CURRENT_BALANCE = :currentBalance " +
-                        "WHERE ACCOUNT_NUMBER = :accounNumber")
+        "SET CURRENT_BALANCE = :currentBalance " +
+        "WHERE ACCOUNT_NUMBER = :accountNumber")
+                .dataSource(dataSource)
                 .build();
     }
 
@@ -151,33 +151,26 @@ public class BatchConfiguration {
     @Bean
     @StepScope
     public FlatFileItemWriter<AccountSummary> accountSummaryFileWriter(
-            @Value("#{jobParameters['summaryFile']}") String summaryFile) {
+            @Value("#{jobParameters['summaryFile']}") Resource summaryFile) {
 
-        Resource resource = new ClassPathResource(summaryFile);
-
-
-        if (resource.exists()) {
-            log.info("존재함 {}", resource.getFilename());
-        } else {
-            log.info("존재하지 않음");
-        }
 
 
         DelimitedLineAggregator<AccountSummary> lineAggregator = new DelimitedLineAggregator<>();
 
         BeanWrapperFieldExtractor<AccountSummary> fieldExtractor = new BeanWrapperFieldExtractor<>();
 
-        fieldExtractor.setNames(new String[] {"ACCOUNT_NUMBER", "CURRENT_BALANCE"});
+        fieldExtractor.setNames(new String[] {"accountNumber", "currentBalance"}); // 객체 내 필드 이름
         fieldExtractor.afterPropertiesSet();
         lineAggregator.setFieldExtractor(fieldExtractor);
 
         return new FlatFileItemWriterBuilder<AccountSummary>()
                 .name("accountSummaryFileWriter")
-                .resource(resource)
+                .resource(summaryFile)
                 .lineAggregator(lineAggregator)
                 .build();
     }
-
+//file:/C:/Users/JH/Desktop/sparta/batch-banking/build/libs/ba
+//tch-banking-0.0.1-SNAPSHOT.jar!/BOOT-INF/classes!/summary14.csv
     @Bean
     public Step generateAccountSummaryStep() {
         return this.stepBuilderFactory.get("generateAccountSummaryStep")

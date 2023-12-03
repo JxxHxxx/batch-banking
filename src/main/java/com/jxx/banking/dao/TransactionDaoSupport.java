@@ -16,7 +16,7 @@ public class TransactionDaoSupport extends JdbcTemplate implements TransactionDa
     @SuppressWarnings("unchecked")
     public List<Transaction> getTransactionByAccountNumber(String accountNumber) {
         return query(
-                "select t.id, t.timestamp, t.amount " +
+                "select t.transaction_id, t.timestamp, t.amount " +
                         "from transaction t inner join account_summary a on " +
                         "a.id = t.account_summary_id " +
                         "where a.account_number = ? ",

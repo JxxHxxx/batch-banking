@@ -10,6 +10,7 @@ import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.file.transform.FieldSet;
 
+// ExitStatus 가 리더의 상태에 묶여 있기 때문에 커스텀 리더기를 구현한다.
 @Slf4j
 public class TransactionReader implements ItemStreamReader<Transaction> {
 
@@ -46,7 +47,7 @@ public class TransactionReader implements ItemStreamReader<Transaction> {
             }
 
         }
-        return result;
+        return result; // null 을 리턴하면 파일 처리가 완료됐음을 의미
     }
 
     public void setFieldSetReader(ItemStreamReader<FieldSet> fieldSetReader) {
@@ -59,7 +60,7 @@ public class TransactionReader implements ItemStreamReader<Transaction> {
             log.info("recordCount == expectedRecordCount");
             return execution.getExitStatus();
         }
-        else {
+        else { // 레코드 수와 실제 레코드 수가 일치하지 않다면 잡을 중지
             log.info("recordCount != expectedRecordCount rc {} , erc {}", recordCount, expectedRecordCount);
             return ExitStatus.STOPPED;
         }
